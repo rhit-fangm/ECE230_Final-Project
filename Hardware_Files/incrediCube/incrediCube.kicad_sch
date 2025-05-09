@@ -1,0 +1,51 @@
+(kicad_sch
+	(version 20231120)
+	(generator "eeschema")
+	(generator_version "8.0")
+	(uuid "028537f7-ea5d-45f5-80a4-95bcce700afd")
+	(paper "A4")
+	(lib_symbols)
+	(sheet
+		(at 45.212 67.31)
+		(size 54.864 39.37)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "255163ff-a566-4347-8c88-e2c84fd57b3f")
+		(property "Sheetname" "Shift Register Logic"
+			(at 45.212 66.5984 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "untitled.kicad_sch"
+			(at 45.212 107.2646 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "incrediCube"
+				(path "/028537f7-ea5d-45f5-80a4-95bcce700afd"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+)

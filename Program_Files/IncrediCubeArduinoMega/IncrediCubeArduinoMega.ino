@@ -39,9 +39,9 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  registerImpulse();
+  // registerImpulse();
   // registerFill();
-  // registerFillLength(5);
+  registerFillLength(5);
   delay(100);
   Serial.println("registercycled");
 }

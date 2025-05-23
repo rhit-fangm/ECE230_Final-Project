@@ -1,0 +1,3 @@
+#ifndef CRShiftRegister
+#define CRShiftRegister
+

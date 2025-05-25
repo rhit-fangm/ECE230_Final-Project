@@ -1,3 +1,12 @@
+/*
+File: incrediCube_NANO
+Author(s): Chase Robinson, Michael Fang
+Purpose:
+  run a 5x5 LED cube using the Arduino NANO
+  development board connected to shift
+  registers.
+*/
+
 #include "DHT.h"
 #define DHT11_PIN 7
 #define DHT_TYPE DHT11
@@ -116,74 +125,6 @@ ISR(TIMER1_COMPA_vect) {
 void button0Flagged(){
   button0Flag = 1;
 }
-
-
-///-----------------------------
-// cube macro control
-
-void cubeCycle(){
-  matrixToRegister();
-  updateRegisterOutput();
-  currentZ = (currentZ+1)%5;
-}
-
-
-
-void matrixToRegister(){
-  makeShiftArray();
-  setCubeRegister();
-}
-
-void makeShiftArray(){
-  // fill output array with zeros
-  for (int i = 0 ; i < 30 ; i++){
-    outputArray[i] = 0;
-  }
-
-  //set the current z bit high
-  outputArray[25+currentZ] = 1;
-
-  int outputIndex = 0;
-  for (int x = 0 ; x < 5 ; x++){ //navigate X values
-    for (int y = 0 ; y < 5 ; y++){
-      outputArray[outputIndex] = cubeMatrix[currentZ][x][y];
-      outputIndex++;
-    }
-  }
-}
-
-// load the shift register with current XY plane
-void setCubeRegister(){
-  for (int i = 29 ; i > -1 ; i--){
-    shiftBitIn(outputArray[i]);
-  }
-}
-
-// set all bits in stored matrix to zero
-void zeroMatrix(){
-  for (int z = 0 ; z < 5 ; z++){
-    for (int x = 0 ; x < 5 ; x++){
-      for (int y = 0 ; y < 5 ; y++){
-        cubeMatrix[z][x][y] = 0;
-      }
-    }
-  }
-
-}
-
-void oneMatrix(){
-  for (int z = 0 ; z < 5 ; z++){
-    for (int x = 0 ; x < 5 ; x++){
-      for (int y = 0 ; y < 5 ; y++){
-        cubeMatrix[z][x][0] = 1;
-      }
-    }
-  }
-
-}
-
-// end cube macro control
-///-----------------------------
 
 
 

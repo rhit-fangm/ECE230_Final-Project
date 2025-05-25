@@ -1,13 +1,16 @@
 /*
 File: shiftRegisterFunctions
-Author(s): Chase Robinson, Michael Fang
-Purpose: control 4 8bit SN74H595 shift registers
-in a daisy-chain configuration.
+Author(s): Chase Robinson
+Purpose: 
+  control 4 8bit SN74H595 shift registers
+  in a daisy-chain configuration.
 
-Notes:
+Bit Connections:
 
-  -------> [][][][][][][][] [][][][][][][][] [][][][][][][][] [][][]   [] [] [] [] []
- shift in:{                     XY plane bits                       }  {Z control bits}
+  D4 ----> ORCLK (output register clock)
+  D5 ----> SRCLK (shift register clock)
+  D6 ----> [][][][][]|[][][] [][]|[][][][][]|[] [][][][]|[][][][] []|   [] [] [] [] []     [] []             (output register pins / bits)
+ shift in:{                     XY plane bits                       }  {Z control bits}   {unused}
 
 */
 

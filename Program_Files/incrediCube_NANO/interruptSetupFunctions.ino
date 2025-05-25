@@ -1,3 +1,11 @@
+/*
+File: interruptSetupFunctions
+Author(s): Chase Robinson
+Purpose:
+  Functions that run once in setup to configure
+  timers and gpio pins to be used as interrupts.
+*/
+
 // buttons
 void setupButton0(){
   noInterrupts();

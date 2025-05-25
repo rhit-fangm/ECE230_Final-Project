@@ -1,8 +1,33 @@
-const int inputPin = 3;
+#include "DHT.h"
+#define DHT11_PIN 7
+#define DHT_TYPE DHT11
+DHT dht11(DHT11_PIN, DHT_TYPE);
+
+#define button0Pin 3
+
+int temperature = 0;
+int humidity = 0;
+
+// interrupt boolean flags to run in main loop
+bool readDHTFlag = 0;
+bool button0Flag = 0;
+
+
+
+const int inputPin = 6;
 const int srclk = 5;
 const int orclk = 4;
 
+// 
+bool cubeFlag = 0;
 int currentZ = 0;
+//
+
+// Frame Animation Variables
+int currentFrame = 0;
+int endFrame = 0;
+int currentFrameDelay = 10;
+//
 
 bool cubeMatrix[5][5][5] = {
   {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
@@ -25,19 +50,44 @@ position on that register (0-4) be a Y coordinate.
 
 
 void setup() {
+  // set up timer-based & other interrupts
+  setupTimer2();
+  setupTimer1();
+  setupButton0();
 
-  // Serial.begin(9600);
+  Serial.begin(9600);
+  dht11.begin();
+
   regInit();
   clearShiftRegister(30);
+  zeroMatrix();
 
 }
 
-void loop() {
 
-  // cubeImpulse();
-  matrixToRegister();
-  updateRegisterOutput();
-  currentZ = (currentZ+1)%5;
+void loop() {
+  // Serial.println(temperature);
+  if (readDHTFlag){
+    readDHTFlag = 0;
+    updateDHTValues();
+
+  }
+
+  if (button0Flag){
+    button0Flag = 0;
+    Serial.println("button flagged");
+    dhtValuesToSerial();
+  }
+
+  if (cubeFlag){
+    cubeFlag = 0;
+    cubeCycle();
+  }
+
+  setImpulseMatrix();
+  // oneMatrix();
+  delay(currentFrameDelay);
+  
 }
 // end main loop
 
@@ -45,12 +95,39 @@ void loop() {
 
 
 
+
+
+// Timer based interrupt to flash the cube
+ISR(TIMER2_COMPA_vect) {
+  noInterrupts();
+  // Serial.println("timer2");
+  cubeCycle();  // flash a level of the cube
+  interrupts();
+}
+
+ISR(TIMER1_COMPA_vect) {
+  // noInterrupts();
+  // Serial.println("timer1");
+  readDHTFlag = 1;
+  // Serial.println(temperature);
+  // interrupts();
+}
+
+void button0Flagged(){
+  button0Flag = 1;
+}
+
+
 ///-----------------------------
 // cube macro control
 
-void cubeImpulse(){
-  
+void cubeCycle(){
+  matrixToRegister();
+  updateRegisterOutput();
+  currentZ = (currentZ+1)%5;
 }
+
+
 
 void matrixToRegister(){
   makeShiftArray();
@@ -84,10 +161,21 @@ void setCubeRegister(){
 
 // set all bits in stored matrix to zero
 void zeroMatrix(){
-  for (int i = 0 ; i < 5 ; i++){
-    for (int j = 0 ; j < 5 ; j++){
-      for (int k = 0 ; k < 5 ; k++){
-        cubeMatrix[i][j][k] = 0;
+  for (int z = 0 ; z < 5 ; z++){
+    for (int x = 0 ; x < 5 ; x++){
+      for (int y = 0 ; y < 5 ; y++){
+        cubeMatrix[z][x][y] = 0;
+      }
+    }
+  }
+
+}
+
+void oneMatrix(){
+  for (int z = 0 ; z < 5 ; z++){
+    for (int x = 0 ; x < 5 ; x++){
+      for (int y = 0 ; y < 5 ; y++){
+        cubeMatrix[z][x][0] = 1;
       }
     }
   }
@@ -99,54 +187,100 @@ void zeroMatrix(){
 
 
 
+//character arrays
 
+bool currentCharArray[5][5]{
+  {0,0,0,0,0},
+  {0,0,0,0,0},
+  {0,0,0,0,0},
+  {0,0,0,0,0},
+  {0,0,0,0,0}
+};
 
-///-----------------------------
-// shift register controls
+bool emptyArray[5][5]{
+  {0,0,0,0,0},
+  {0,0,0,0,0},
+  {0,0,0,0,0},
+  {0,0,0,0,0},
+  {0,0,0,0,0}
+};
 
-//Initialize register pins
-void regInit(){
-  pinMode(inputPin, OUTPUT);
-  pinMode(srclk, OUTPUT);
-  pinMode(orclk, OUTPUT);
-  digitalWrite(inputPin, 0);
-  digitalWrite(srclk, 0);
-  digitalWrite(orclk, 0);
-  // Serial.println("regInit");
-}
+bool zeroArray[5][5]{
+  {0,1,1,1,0},
+  {0,1,0,1,0},
+  {0,1,0,1,0},
+  {0,1,0,1,0},
+  {0,1,1,1,0}
+};
 
-// shift one bit of data into the sr
-void shiftBitIn(bool bit){
-  digitalWrite(inputPin, bit);
-  digitalWrite(srclk, 1);
-  delayMicroseconds(1);
-  digitalWrite(srclk, 0);
-  digitalWrite(inputPin, 0);
-}
+bool oneArray[5][5] = {
+  {0,0,1,0,0},
+  {0,1,1,0,0},
+  {0,0,1,0,0},
+  {0,0,1,0,0},
+  {0,1,1,1,0}
+};
 
-void shiftFill(bool bit, int count){
-  for (int i = 0 ; i < count ; i++){
-    shiftBitIn(bit);
-  }
-}
+bool twoArray[5][5] = {
+  {0,1,1,1,0},
+  {0,0,0,1,0},
+  {0,0,1,0,0},
+  {0,1,0,0,0},
+  {0,1,1,1,0}
+};
 
-// load the values of shift registers into output registers
-void updateRegisterOutput(){
-  digitalWrite(orclk, 1);
-  delayMicroseconds(1);
-  digitalWrite(orclk, 0);
+bool threeArray[5][5] = {
+  {0,1,1,1,0},
+  {0,0,0,1,0},
+  {0,0,1,1,0},
+  {0,0,0,1,0},
+  {0,1,1,1,0}
+};
 
-  // Serial.println("updateOutput");
-}
+bool fourArray[5][5] = {
+  {0,1,0,1,0},
+  {0,1,0,1,0},
+  {0,1,1,1,0},
+  {0,0,0,1,0},
+  {0,0,0,1,0}
+};
 
-void clearShiftRegister(int numBits){
-  for (int i = 0 ; i < numBits ; i++){
-    shiftBitIn(0);
-  }
-  // Serial.println("clearShiftRegister");
-}
+bool fiveArray[5][5] = {
+  {0,1,1,1,1},
+  {0,1,0,0,0},
+  {0,1,1,1,0},
+  {0,0,0,1,0},
+  {0,1,1,1,0}
+};
 
-// end of shift register controls
-///-----------------------------
+bool sixArray[5][5] = {
+  {0,0,1,1,0},
+  {0,1,0,0,0},
+  {0,1,1,1,0},
+  {0,1,0,1,0},
+  {0,1,1,1,0}
+};
 
+bool sevenArray[5][5] = {
+  {0,1,1,1,0},
+  {0,0,0,1,0},
+  {0,0,1,0,0},
+  {0,1,0,0,0},
+  {0,1,0,0,0}
+};
 
+bool eightArray[5][5] = {
+  {0,1,1,1,0},
+  {0,1,0,1,0},
+  {0,1,1,1,0},
+  {0,1,0,1,0},
+  {0,1,1,1,0}
+};
+
+bool nineArray[5][5] = {
+  {0,1,1,1,0},
+  {0,1,0,1,0},
+  {0,1,1,1,0},
+  {0,0,0,1,0},
+  {0,1,1,0,0}
+};

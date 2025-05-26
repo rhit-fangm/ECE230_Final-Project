@@ -7,6 +7,49 @@ Purpose:
   and math.
 */
 
+// oscillating display
+void displayOscillatingFrame(){
+  zeroCubeMatrix();
+  switch(loopCounter){
+    case 0:
+      cubeMatrix[2][2][2] = 1;
+    break;
+    case 1:
+      cubeMatrix[1][1][1] = 1;
+      cubeMatrix[1][1][3] = 1;
+      cubeMatrix[1][3][1] = 1;
+      cubeMatrix[1][3][3] = 1;
+
+      cubeMatrix[3][1][1] = 1;
+      cubeMatrix[3][1][3] = 1;
+      cubeMatrix[3][3][1] = 1;
+      cubeMatrix[3][3][3] = 1;
+    break;
+    case 2:
+
+    break;
+    case 3:
+      cubeMatrix[2][0][0] = 1;
+      cubeMatrix[2][0][4] = 1;
+      cubeMatrix[2][4][0] = 1;
+      cubeMatrix[2][4][4] = 1;
+    break;
+    case 4:
+      cubeMatrix[1][1][1] = 1;
+      cubeMatrix[1][1][3] = 1;
+      cubeMatrix[1][3][1] = 1;
+      cubeMatrix[1][3][3] = 1;
+
+      cubeMatrix[3][1][1] = 1;
+      cubeMatrix[3][1][3] = 1;
+      cubeMatrix[3][3][1] = 1;
+      cubeMatrix[3][3][3] = 1;
+    break;
+    default:
+    break;
+  }
+
+}
 
 // update cube with temperature values
 void displayTemperatureFrame(){

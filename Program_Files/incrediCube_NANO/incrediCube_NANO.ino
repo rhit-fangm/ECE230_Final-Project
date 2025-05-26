@@ -47,7 +47,7 @@ long int currentFrameDelay = 2000; //in cycle
 int previousFrame = 0;
 
 int animationOption = 0;
-#define maxAnimationOption 4
+#define maxAnimationOption 5
 //
 
 // debouncing stuff
@@ -166,6 +166,15 @@ void loop() {
         loopCounter = (loopCounter+1)%100;
         displayHumidityFrame();
       }
+    case 4:
+      currentFrameDelay = 10000;
+      previousFrame++;
+      if (previousFrame >= currentFrameDelay){
+        previousFrame = 0;
+        loopCounter = (loopCounter+1)%5; //loopCounter will go from 0 to 4 and then back to 0
+        displayOscillatingFrame();
+      }
+    break;
     default:
       currentFrameDelay = 2000;
       previousFrame++;

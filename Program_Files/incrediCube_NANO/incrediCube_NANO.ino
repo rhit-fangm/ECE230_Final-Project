@@ -14,31 +14,56 @@ DHT dht11(DHT11_PIN, DHT_TYPE);
 
 #define button0Pin 3
 
+// dht value and display variables
 int temperature = 0;
 int humidity = 0;
+
+int tempNums[] = {0,0};
+int humNums[] = {0,0};
+//
 
 // interrupt boolean flags to run in main loop
 bool readDHTFlag = 0;
 bool button0Flag = 0;
+//
 
-
-
+// shift register pins
 const int inputPin = 6;
 const int srclk = 5;
 const int orclk = 4;
+//
 
-// 
-bool cubeFlag = 0;
-int currentZ = 0;
+// variables for cube display interrupt
+bool cubeFlag = 0; // flag set by interrupt
+int currentZ = 0; // current Z level to display
 //
 
 // Frame Animation Variables
 int currentFrame = 0;
-int endFrame = 0;
-int currentFrameDelay = 10;
+int loopCounter = 0;
+int loopCounterInitial = loopCounter;
+
+long int currentFrameDelay = 2000; //in cycle
+int previousFrame = 0;
+
+int animationOption = 0;
+#define maxAnimationOption 4
+//
+
+// debouncing stuff
+const int debounceTime = 3000;
+long int timeSincePress = 0;
 //
 
 bool cubeMatrix[5][5][5] = {
+  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
+  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
+  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
+  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
+  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}}
+};
+
+bool savedMatrix[5][5][5] = {
   {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
   {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
   {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
@@ -69,34 +94,92 @@ void setup() {
 
   regInit();
   clearShiftRegister(30);
-  zeroMatrix();
+  zeroCubeMatrix();
 
 }
 
 
 void loop() {
   // Serial.println(temperature);
+  timeSincePress++;
+
   if (readDHTFlag){
     readDHTFlag = 0;
     updateDHTValues();
-
+    dhtConvertIntArray();
+    Serial.print(temperature);
+    Serial.println(humidity);
   }
 
+  // button was pushed, go to next animation
   if (button0Flag){
     button0Flag = 0;
-    Serial.println("button flagged");
-    dhtValuesToSerial();
+    if (timeSincePress > debounceTime){
+      Serial.println("button flagged");
+      animationOption = (animationOption+1)%(maxAnimationOption);
+      loopCounter = 0;
+      Serial.println(animationOption);
+      zeroCubeMatrix();
+    }
   }
 
+  // display the matrix onto the cube
   if (cubeFlag){
     cubeFlag = 0;
     cubeCycle();
   }
 
-  setImpulseMatrix();
-  // oneMatrix();
-  delay(currentFrameDelay);
-  
+  // switch case selects the current animation to do
+  switch(animationOption){
+    case 0:
+      currentFrameDelay = 2000;
+      previousFrame++;
+      // Serial.println(previousFrame);
+      if (previousFrame >= currentFrameDelay){
+        previousFrame = 0;
+        loopCounter = (loopCounter+1)%125;
+        impulseFrame();
+      }
+    break;
+    case 1:
+      currentFrameDelay = 1000;
+      previousFrame++;
+      if (previousFrame >= currentFrameDelay){
+        previousFrame = 0;
+        droplets(50);
+      }
+    break;
+    case 2:
+      currentFrameDelay = 2000;
+      previousFrame++;
+      if (previousFrame >= currentFrameDelay){
+        previousFrame = 0;
+        loopCounter = (loopCounter+1)%100;
+        displayTemperatureFrame();
+      }
+    break;
+    case 3:
+      currentFrameDelay = 2000;
+      previousFrame++;
+      if (previousFrame >= currentFrameDelay){
+        previousFrame = 0;
+        loopCounter = (loopCounter+1)%100;
+        displayHumidityFrame();
+      }
+    default:
+      currentFrameDelay = 2000;
+      previousFrame++;
+      // Serial.println(previousFrame);
+      if (previousFrame >= currentFrameDelay){
+        previousFrame = 0;
+        loopCounter = (loopCounter+1)%125;
+        impulseFrame();
+      }
+    break;
+
+  }
+
+  delayMicroseconds(2);
 }
 // end main loop
 
@@ -130,7 +213,15 @@ void button0Flagged(){
 
 //character arrays
 
-bool currentCharArray[5][5]{
+bool currentCharArray0[5][5]{
+  {0,0,0,0,0},
+  {0,0,0,0,0},
+  {0,0,0,0,0},
+  {0,0,0,0,0},
+  {0,0,0,0,0}
+};
+
+bool currentCharArray1[5][5]{
   {0,0,0,0,0},
   {0,0,0,0,0},
   {0,0,0,0,0},
@@ -147,15 +238,15 @@ bool emptyArray[5][5]{
 };
 
 bool zeroArray[5][5]{
-  {0,1,1,1,0},
+  {0,0,0,0,0},
+  {0,0,1,0,0},
   {0,1,0,1,0},
   {0,1,0,1,0},
-  {0,1,0,1,0},
-  {0,1,1,1,0}
+  {0,0,1,0,0}
 };
 
 bool oneArray[5][5] = {
-  {0,0,1,0,0},
+  {0,0,0,0,0},
   {0,1,1,0,0},
   {0,0,1,0,0},
   {0,0,1,0,0},
@@ -163,23 +254,23 @@ bool oneArray[5][5] = {
 };
 
 bool twoArray[5][5] = {
-  {0,1,1,1,0},
-  {0,0,0,1,0},
+  {0,0,0,0,0},
   {0,0,1,0,0},
-  {0,1,0,0,0},
+  {0,1,0,1,0},
+  {0,0,1,0,0},
   {0,1,1,1,0}
 };
 
 bool threeArray[5][5] = {
+  {0,0,0,0,0},
   {0,1,1,1,0},
-  {0,0,0,1,0},
   {0,0,1,1,0},
   {0,0,0,1,0},
   {0,1,1,1,0}
 };
 
 bool fourArray[5][5] = {
-  {0,1,0,1,0},
+  {0,0,0,0,0},
   {0,1,0,1,0},
   {0,1,1,1,0},
   {0,0,0,1,0},
@@ -187,41 +278,57 @@ bool fourArray[5][5] = {
 };
 
 bool fiveArray[5][5] = {
-  {0,1,1,1,1},
-  {0,1,0,0,0},
+  {0,0,0,0,0},
   {0,1,1,1,0},
-  {0,0,0,1,0},
+  {0,1,0,0,0},
+  {0,0,1,0,0},
   {0,1,1,1,0}
 };
 
 bool sixArray[5][5] = {
-  {0,0,1,1,0},
+  {0,0,0,0,0},
   {0,1,0,0,0},
-  {0,1,1,1,0},
+  {0,1,1,0,0},
   {0,1,0,1,0},
-  {0,1,1,1,0}
+  {0,1,1,0,0}
 };
 
 bool sevenArray[5][5] = {
+  {0,0,0,0,0},
   {0,1,1,1,0},
   {0,0,0,1,0},
-  {0,0,1,0,0},
-  {0,1,0,0,0},
-  {0,1,0,0,0}
+  {0,0,0,1,0},
+  {0,0,0,1,0}
 };
 
 bool eightArray[5][5] = {
-  {0,1,1,1,0},
+  {0,0,1,0,0},
   {0,1,0,1,0},
-  {0,1,1,1,0},
+  {0,0,1,0,0},
   {0,1,0,1,0},
-  {0,1,1,1,0}
+  {0,0,1,0,0}
 };
 
 bool nineArray[5][5] = {
+  {0,0,0,0,0},
   {0,1,1,1,0},
-  {0,1,0,1,0},
   {0,1,1,1,0},
   {0,0,0,1,0},
   {0,1,1,0,0}
+};
+
+bool tArray[5][5] = {
+  {0,0,0,0,0},
+  {0,1,1,1,0},
+  {0,0,1,0,0},
+  {0,0,1,0,0},
+  {0,0,0,0,0}
+};
+
+bool hArray[5][5] = {
+  {0,0,0,0,0},
+  {0,1,0,1,0},
+  {0,1,1,1,0},
+  {0,1,0,1,0},
+  {0,0,0,0,0}
 };

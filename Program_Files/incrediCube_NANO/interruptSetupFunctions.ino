@@ -15,8 +15,12 @@ void setupButton0(){
   interrupts();
 }
 ///-----------------------------
-
 //Timers
+
+/*
+Sets up Timer2 to run the interrupt to do
+cubeCycle every millisecond.
+*/
 void setupTimer2(){
   // Disable interrupts during setup
   noInterrupts(); // same as cli()
@@ -44,6 +48,9 @@ void setupTimer2(){
   interrupts(); // same as sei()
 }
 
+/*
+Sets up Timer1 for the dht reading interrupt every 2 seconds
+*/
 void setupTimer1(){
   noInterrupts(); // Disable interrupts
 

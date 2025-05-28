@@ -7,6 +7,9 @@ Purpose:
   to hardware control functions, but do have use
   in some algorithms for displaying neat stuff
   on the cube or doing other calculations.
+
+  Post project note: I'm leaving this code here, even though we didn't end up using it.
+  Thanks for all the hard work and showing me shift registers. :>
 */
 
 

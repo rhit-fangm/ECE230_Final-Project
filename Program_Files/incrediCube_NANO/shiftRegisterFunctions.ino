@@ -17,7 +17,15 @@ Bit Connections:
 ///-----------------------------
 // shift register controls
 
-//Initialize register pins
+/*
+Function: regInit
+Returns: nothing
+Purpose: 
+  Correctly initialize control pins:
+  Set the pinMode and initial outputs
+  of the input and two clock pins for
+  the shift registers.
+*/
 void regInit(){
   pinMode(inputPin, OUTPUT);
   pinMode(srclk, OUTPUT);
@@ -25,10 +33,16 @@ void regInit(){
   digitalWrite(inputPin, 0);
   digitalWrite(srclk, 0);
   digitalWrite(orclk, 0);
-  // Serial.println("regInit");
 }
 
-// shift one bit of data into the sr
+/*
+Function: shiftBitIn
+Returns: nothing
+Arguments: bool bit
+Purpose: 
+  shift one bit of data with value "bit"
+  into the shift register.
+*/
 void shiftBitIn(bool bit){
   digitalWrite(inputPin, bit);
   digitalWrite(srclk, 1);
@@ -37,26 +51,49 @@ void shiftBitIn(bool bit){
   digitalWrite(inputPin, 0);
 }
 
+
+/*
+Function: shiftFill  
+Returns: nothing  
+Arguments: bool bit, int count  
+Purpose:  
+  shift the specified bit value "bit"  
+  into the shift register "count" times  
+  in sequence by calling shiftBitIn.
+*/
 void shiftFill(bool bit, int count){
   for (int i = 0 ; i < count ; i++){
     shiftBitIn(bit);
   }
 }
 
-// load the values of shift registers into output registers
+/*
+Function: updateRegisterOutput  
+Returns: nothing  
+Arguments: none  
+Purpose:  
+  load the values stored in the shift registers  
+  into the output registers by toggling the  
+  output register clock (orclk) line.
+*/
 void updateRegisterOutput(){
   digitalWrite(orclk, 1);
   delayMicroseconds(1);
   digitalWrite(orclk, 0);
-
-  // Serial.println("updateOutput");
 }
 
+/*
+Function: clearShiftRegister  
+Returns: nothing  
+Arguments: int numBits  
+Purpose:  
+  clear the shift register by shifting in  
+  "numBits" number of 0s sequentially.
+*/
 void clearShiftRegister(int numBits){
   for (int i = 0 ; i < numBits ; i++){
     shiftBitIn(0);
   }
-  // Serial.println("clearShiftRegister");
 }
 
 // end of shift register controls

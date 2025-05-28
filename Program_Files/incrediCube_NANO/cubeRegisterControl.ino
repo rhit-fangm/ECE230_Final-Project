@@ -12,30 +12,57 @@ Purpose:
 ///-----------------------------
 // cube register control
 
+/*
+Function: cubeCycle  
+Returns: nothing  
+Arguments: none  
+Purpose:  
+  update the shift register output to display the  
+  current Z-layer of the 3D cube by calling  
+  matrixToRegister and updateRegisterOutput,  
+  then increment currentZ to cycle to the next  
+  Z-layer (modulo 5). Called every millisecond  
+  to create a persistence-of-vision effect.
+*/
 void cubeCycle(){
   matrixToRegister();
   updateRegisterOutput();
   currentZ = (currentZ+1)%5;
 }
 
-// converts the full matrix to 
-// necessary output for currentZ layer
-// and then shifts it out
+/*
+Function: matrixToRegister  
+Returns: nothing  
+Arguments: none  
+Purpose:  
+  convert the current Z-layer of the 3D matrix  
+  into a shiftable output array using makeShiftArray,  
+  then send that array to the shift register  
+  using setCubeRegister.
+*/
 void matrixToRegister(){
   makeShiftArray();
   setCubeRegister();
 }
 
-// convert the XY plane
-// of the current zValue
-// to the shift register output
+/*
+Function: makeShiftArray  
+Returns: nothing  
+Arguments: none  
+Purpose:  
+  convert the XY plane of the 3D array "cubeMatrix"  
+  at the current Z level (currentZ) into a linear  
+  output array for the shift register. Also sets  
+  a marker bit at index 25 + currentZ to indicate  
+  the active Z-plane.
+*/
 void makeShiftArray(){
   // fill output array with zeros
   for (int i = 0 ; i < 30 ; i++){
     outputArray[i] = 0;
   }
 
-  //set the current z bit high
+  //set the current z bit high with marker bit
   outputArray[25+currentZ] = 1;
 
   int outputIndex = 0;
@@ -47,7 +74,15 @@ void makeShiftArray(){
   }
 }
 
-// outputArray into shift registers
+/*
+Function: setCubeRegister  
+Returns: nothing  
+Arguments: none  
+Purpose:  
+  shift the contents of the "outputArray"  
+  into the shift register in reverse order,  
+  from index 29 down to 0.
+*/
 void setCubeRegister(){
   for (int i = 29 ; i > -1 ; i--){
     shiftBitIn(outputArray[i]);

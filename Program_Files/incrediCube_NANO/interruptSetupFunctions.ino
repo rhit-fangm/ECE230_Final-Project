@@ -20,10 +20,12 @@ void setupButton0(){
 /*
 Sets up Timer2 to run the interrupt to do
 cubeCycle every millisecond.
+
+Source: ATmega328P Datasheet
 */
 void setupTimer2(){
   // Disable interrupts during setup
-  noInterrupts(); // same as cli()
+  noInterrupts(); // could also use cli()
 
   // Reset Timer2 control registers
   TCCR2A = 0;
@@ -32,7 +34,7 @@ void setupTimer2(){
 
   // Set compare match register for 1ms interval
   // Clock = 16 MHz, Prescaler = 64
-  // Tick = 4 µs → 1 ms = 250 ticks → OCR2A = 249
+  // Tick = 4 us → 1 ms = 250 ticks -> OCR2A = 249
   OCR2A = 249;
 
   // Set Timer2 to CTC (Clear Timer on Compare Match) mode
@@ -45,11 +47,13 @@ void setupTimer2(){
   TIMSK2 |= (1 << OCIE2A);
 
   // Re-enable interrupts
-  interrupts(); // same as sei()
+  interrupts(); // same as using sei()
 }
 
 /*
 Sets up Timer1 for the dht reading interrupt every 2 seconds
+
+Source: ATmega328P Datasheet
 */
 void setupTimer1(){
   noInterrupts(); // Disable interrupts
@@ -62,14 +66,13 @@ void setupTimer1(){
   /*
     a 200ms interval:
     - Clock = 16 MHz
-    - Use prescaler = 1024 → tick = 64 µs
-    - 200 ms = 200,000 µs
+    - Use prescaler = 1024 -> tick = 64 us
+    - 200 ms = 200,000 us
     - Ticks needed = 200,000 / 64 = 3125
 
-    So:
     OCR1A = 3125 - 1 = 3124
   */
-  // OCR1A = 3124;
+  // original wasn't sufficient, so OCR1A = (3125*10 - 1) = 31249
   OCR1A = 31249; //for 2 seconds
 
   // Set CTC mode (Clear Timer on Compare Match)

@@ -47,7 +47,9 @@ long int currentFrameDelay = 2000; //in cycle
 int previousFrame = 0;
 
 int animationOption = 0;
-#define maxAnimationOption 5
+#define maxAnimationOption 6
+
+bool cycleAnimations = 0;
 //
 
 // debouncing stuff
@@ -56,14 +58,6 @@ long int timeSincePress = 0;
 //
 
 bool cubeMatrix[5][5][5] = {
-  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
-  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
-  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
-  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
-  {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}}
-};
-
-bool savedMatrix[5][5][5] = {
   {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
   {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
   {{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0},{0, 0, 0, 0, 0}},
@@ -82,7 +76,14 @@ Let each register be an X coordinate, with each bit
 position on that register (0-4) be a Y coordinate.
 */
 
-
+/*
+setup function description: 
+void setup() is responsible for setting up timer control registers,
+timer interrupts, and configuring gpio inputs with interrupts.
+Furthermore, it initializes the serial monitor, dht11 sensor, and
+the pins necessary to control the shift register. Calls functions
+to fill the shift register with zeros and turn off all LEDs.
+*/
 void setup() {
   // set up timer-based & other interrupts
   setupTimer2();
@@ -100,22 +101,22 @@ void setup() {
 
 
 void loop() {
-  // Serial.println(temperature);
   timeSincePress++;
 
+  //
   if (readDHTFlag){
     readDHTFlag = 0;
     updateDHTValues();
     dhtConvertIntArray();
-    Serial.print(temperature);
-    Serial.println(humidity);
+    Serial.println(temperature*100+humidity);
   }
 
   // button was pushed, go to next animation
   if (button0Flag){
     button0Flag = 0;
     if (timeSincePress > debounceTime){
-      Serial.println("button flagged");
+      timeSincePress = 0;
+      Serial.println("BF");
       animationOption = (animationOption+1)%(maxAnimationOption);
       loopCounter = 0;
       Serial.println(animationOption);
@@ -123,18 +124,12 @@ void loop() {
     }
   }
 
-  // display the matrix onto the cube
-  if (cubeFlag){
-    cubeFlag = 0;
-    cubeCycle();
-  }
-
+  
   // switch case selects the current animation to do
   switch(animationOption){
     case 0:
-      currentFrameDelay = 2000;
+      currentFrameDelay = 5*2000;
       previousFrame++;
-      // Serial.println(previousFrame);
       if (previousFrame >= currentFrameDelay){
         previousFrame = 0;
         loopCounter = (loopCounter+1)%125;
@@ -175,10 +170,19 @@ void loop() {
         displayOscillatingFrame();
       }
     break;
-    default:
-      currentFrameDelay = 2000;
+    case 5:
+      currentFrameDelay = 10000;
       previousFrame++;
-      // Serial.println(previousFrame);
+      if (previousFrame >= currentFrameDelay){
+        previousFrame = 0;
+        loopCounter = (loopCounter+1)%3;
+        zeroCubeMatrix();
+        displayLayerOn(loopCounter+1);
+      }
+    break;
+    default:
+      currentFrameDelay = 5*2000;
+      previousFrame++;
       if (previousFrame >= currentFrameDelay){
         previousFrame = 0;
         loopCounter = (loopCounter+1)%125;
@@ -195,25 +199,42 @@ void loop() {
 
 
 
-
-
+/*
+Aside from the timer2 interrupt that switches the
+current level of the cube turned on every millisecond,
+interrupts are used to set global boolean "flag"
+variables that are checked by conditionals in the
+main loop.
+*/
 
 // Timer based interrupt to flash the cube
 ISR(TIMER2_COMPA_vect) {
   noInterrupts();
-  // Serial.println("timer2");
   cubeCycle();  // flash a level of the cube
   interrupts();
+  /*
+  turning off other interrupts while this
+  interrupt vector is called is necessary
+  so that the cube maintains consistent
+  and fast demultiplexing.
+  */
 }
 
 ISR(TIMER1_COMPA_vect) {
-  // noInterrupts();
-  // Serial.println("timer1");
   readDHTFlag = 1;
-  // Serial.println(temperature);
-  // interrupts();
+  /*
+  because this flag is only for
+  fetching DHT11 readings every
+  2 seconds, this is not critical
+  enough to turn off other interrupts
+  for it to function 100.00% of the time.
+  */
 }
 
+/*
+the function that runs when the interrupt
+for the button pin is triggered.
+*/
 void button0Flagged(){
   button0Flag = 1;
 }
@@ -264,8 +285,8 @@ bool oneArray[5][5] = {
 
 bool twoArray[5][5] = {
   {0,0,0,0,0},
-  {0,0,1,0,0},
-  {0,1,0,1,0},
+  {0,1,1,0,0},
+  {0,0,0,1,0},
   {0,0,1,0,0},
   {0,1,1,1,0}
 };
